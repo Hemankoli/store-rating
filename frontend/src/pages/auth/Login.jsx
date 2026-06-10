@@ -12,10 +12,17 @@ const schema = z.object({
 
 const ROLE_HOME = { admin: '/admin/dashboard', user: '/stores', store_owner: '/owner/dashboard' };
 
+const FEATURES = [
+  { icon: '★', text: 'Rate stores 1–5 stars' },
+  { icon: '⊞', text: 'Admin panel with live stats' },
+  { icon: '◎', text: 'Owner dashboard with analytics' },
+];
+
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
 
   if (user) return <Navigate to={ROLE_HOME[user.role] ?? '/stores'} replace />;
 
@@ -26,10 +33,8 @@ export default function Login() {
   async function onSubmit(data) {
     try {
       setServerError('');
-      const user = await login(data.email, data.password);
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'user') navigate('/stores');
-      else navigate('/owner/dashboard');
+      const u = await login(data.email, data.password);
+      navigate(ROLE_HOME[u.role] ?? '/stores');
     } catch (err) {
       setServerError(err.message || 'Login failed');
     }
@@ -40,60 +45,91 @@ export default function Login() {
       minHeight: '100vh',
       backgroundColor: 'var(--bg)',
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Ambient glow */}
+      {/* Left panel — branding */}
       <div style={{
-        position: 'absolute',
-        width: 600,
-        height: 600,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      }} />
-
-      <div style={{
-        width: '100%',
-        maxWidth: 420,
-        animation: 'fadeUp 0.4s ease forwards',
+        flex: '0 0 42%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '60px 56px',
+        borderRight: '1px solid var(--border)',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        {/* Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 32, color: 'var(--accent)', marginBottom: 8 }}>★</div>
+        {/* Ambient glow */}
+        <div style={{
+          position: 'absolute', width: 500, height: 500,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)',
+          top: '30%', left: '-10%', pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', animation: 'fadeUp 0.5s ease both' }}>
+          {/* Logo mark */}
+          <div style={{
+            width: 52, height: 52, borderRadius: 14,
+            background: 'var(--accent-dim)',
+            border: '1px solid rgba(245,158,11,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, color: 'var(--accent)', marginBottom: 28,
+            boxShadow: '0 0 32px rgba(245,158,11,0.15)',
+          }}>★</div>
+
           <h1 style={{
             fontFamily: 'Fraunces, Georgia, serif',
-            fontSize: 32,
-            fontWeight: 400,
-            margin: 0,
-            color: 'var(--text)',
-            letterSpacing: '-0.5px',
-          }}>Ratify</h1>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>
-            Sign in to your account
-          </p>
-        </div>
+            fontSize: 40, fontWeight: 400,
+            margin: '0 0 12px', letterSpacing: '-1px',
+            color: 'var(--text)', lineHeight: 1.1,
+          }}>
+            Store ratings,<br />
+            <span style={{ color: 'var(--accent)' }}>simplified.</span>
+          </h1>
 
-        {/* Card */}
-        <div className="card" style={{ padding: 32 }}>
+          <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.6, margin: '0 0 40px', maxWidth: 320 }}>
+            Ratify gives customers a voice and store owners the insight they need.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {FEATURES.map(f => (
+              <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'var(--card)', border: '1px solid var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 13, color: 'var(--accent)', flexShrink: 0,
+                }}>{f.icon}</span>
+                <span style={{ fontSize: 14, color: 'var(--muted)' }}>{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 32px',
+      }}>
+        <div style={{ width: '100%', maxWidth: 400, animation: 'fadeUp 0.45s 0.1s ease both' }}>
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: 28, fontWeight: 400, margin: '0 0 6px', letterSpacing: '-0.5px',
+            }}>Welcome back</h2>
+            <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>Sign in to your account</p>
+          </div>
+
           {serverError && (
             <div style={{
-              background: 'rgba(248,113,113,0.1)',
-              border: '1px solid rgba(248,113,113,0.25)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              marginBottom: 20,
-              fontSize: 13,
-              color: 'var(--error)',
-            }}>
-              {serverError}
-            </div>
+              background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)',
+              borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: 'var(--error)',
+            }}>{serverError}</div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -102,11 +138,34 @@ export default function Login() {
               <input {...register('email')} type="email" placeholder="you@example.com" />
               {errors.email && <p className="form-error">{errors.email.message}</p>}
             </div>
+
             <div>
               <label className="form-label">Password</label>
-              <input {...register('password')} type="password" placeholder="••••••••" />
+              <div style={{ position: 'relative' }}>
+                <input
+                  {...register('password')}
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  style={{ paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--subtle)', fontSize: 14, padding: 0, lineHeight: 1,
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--subtle)'}
+                >
+                  {showPwd ? '○' : '●'}
+                </button>
+              </div>
               {errors.password && <p className="form-error">{errors.password.message}</p>}
             </div>
+
             <button
               type="submit"
               disabled={isSubmitting}
@@ -116,14 +175,14 @@ export default function Login() {
               {isSubmitting ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
-        </div>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--subtle)' }}>
-          No account?{' '}
-          <Link to="/signup" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
-            Create one
-          </Link>
-        </p>
+          <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: 'var(--subtle)' }}>
+            No account?{' '}
+            <Link to="/signup" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

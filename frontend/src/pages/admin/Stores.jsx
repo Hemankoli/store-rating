@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import SortableTable from '../../components/SortableTable';
 import RatingStars from '../../components/RatingStars';
 import client from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 
 const createSchema = z.object({
   name: z.string().min(20, 'Min 20 characters').max(60, 'Max 60 characters'),
@@ -31,6 +32,7 @@ export default function AdminStores() {
   const [assigningId, setAssigningId] = useState(null);
   const [assignOwnerId, setAssignOwnerId] = useState('');
   const [assignError, setAssignError] = useState('');
+  const { toast } = useToast();
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
@@ -54,6 +56,7 @@ export default function AdminStores() {
       await client(`stores/${storeId}`, { method: 'PATCH', body: { ownerId: assignOwnerId || null } });
       setAssigningId(null);
       fetchStores();
+      toast.success('Owner assigned', 'Store owner updated successfully.');
     } catch (err) {
       setAssignError(err.message || 'Failed to assign owner');
     }
@@ -67,6 +70,7 @@ export default function AdminStores() {
       const payload = { ...data, ownerId: data.ownerId || undefined };
       await client('stores', { body: payload });
       reset(); setShowForm(false); fetchStores();
+      toast.success('Store created', 'The new store has been added.');
     } catch (err) { setServerError(err.message || 'Failed to create store'); }
   }
 

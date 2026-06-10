@@ -1,6 +1,24 @@
 import { useState } from 'react';
 
-export default function SortableTable({ columns, data, onSort, filters, onFilterChange }) {
+function SkeletonRows({ columns, rows = 5 }) {
+  return Array.from({ length: rows }).map((_, i) => (
+    <tr key={i} style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--card)' }}>
+      {columns.map(col => (
+        <td key={col.key} style={{ padding: '14px 16px' }}>
+          <span
+            className="skeleton"
+            style={{
+              width: col.key === 'actions' || col.key === 'assignOwner' ? 60 : `${55 + (i * 13 + col.key.length * 7) % 35}%`,
+              height: 14,
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  ));
+}
+
+export default function SortableTable({ columns, data, onSort, filters, onFilterChange, loading = false }) {
   const [sortField, setSortField] = useState(null);
   const [sortOrder, setSortOrder] = useState('asc');
 
@@ -31,46 +49,52 @@ export default function SortableTable({ columns, data, onSort, filters, onFilter
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}>
-              {columns.map(col => (
-                <th
-                  key={col.key}
-                  onClick={() => col.sortable !== false && handleSort(col.key)}
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    color: 'var(--subtle)',
-                    cursor: col.sortable !== false ? 'pointer' : 'default',
-                    userSelect: 'none',
-                    whiteSpace: 'nowrap',
-                    transition: 'color 0.15s',
-                  }}
-                  onMouseEnter={e => { if (col.sortable !== false) e.currentTarget.style.color = 'var(--text)'; }}
-                  onMouseLeave={e => { if (col.sortable !== false) e.currentTarget.style.color = sortField === col.key ? 'var(--accent)' : 'var(--subtle)'; }}
-                >
-                  <span style={{ color: sortField === col.key ? 'var(--accent)' : 'inherit' }}>
+              {columns.map(col => {
+                const isSorted = sortField === col.key;
+                return (
+                  <th
+                    key={col.key}
+                    onClick={() => col.sortable !== false && handleSort(col.key)}
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'left',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: isSorted ? 'var(--accent)' : 'var(--subtle)',
+                      cursor: col.sortable !== false ? 'pointer' : 'default',
+                      userSelect: 'none',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={e => { if (col.sortable !== false) e.currentTarget.style.color = isSorted ? 'var(--accent)' : 'var(--text)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = isSorted ? 'var(--accent)' : 'var(--subtle)'; }}
+                  >
                     {col.label}
-                    {sortField === col.key && (
-                      <span style={{ marginLeft: 4, fontSize: 10 }}>
+                    {isSorted && (
+                      <span style={{ marginLeft: 5, fontSize: 11, opacity: 0.8 }}>
                         {sortOrder === 'asc' ? '↑' : '↓'}
                       </span>
                     )}
-                  </span>
-                </th>
-              ))}
+                    {col.sortable !== false && !isSorted && (
+                      <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.3 }}>↕</span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {loading ? (
+              <SkeletonRows columns={columns} />
+            ) : data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--subtle)', fontSize: 14 }}
-                >
-                  No records found
+                <td colSpan={columns.length} style={{ padding: '60px 16px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 32, opacity: 0.2 }}>◫</span>
+                    <span style={{ color: 'var(--subtle)', fontSize: 14 }}>No records found</span>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -82,7 +106,7 @@ export default function SortableTable({ columns, data, onSort, filters, onFilter
                     backgroundColor: 'var(--card)',
                     transition: 'background-color 0.12s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--surface)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(63,63,70,0.5)'; }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--card)'; }}
                 >
                   {columns.map(col => (

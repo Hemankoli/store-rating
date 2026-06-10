@@ -7,21 +7,14 @@ import client from '../../api/client';
 import useAuth from '../../hooks/useAuth';
 
 const schema = z.object({
-  name: z.string().min(20, 'At least 20 characters').max(60, 'At most 60 characters'),
-  email: z.string().email('Invalid email'),
+  name:     z.string().min(20, 'At least 20 characters').max(60, 'At most 60 characters'),
+  email:    z.string().email('Invalid email'),
   password: z.string()
     .min(8, 'At least 8 characters').max(16, 'At most 16 characters')
     .regex(/[A-Z]/, 'Needs an uppercase letter')
     .regex(/[^A-Za-z0-9]/, 'Needs a special character'),
-  address: z.string().max(400, 'Too long'),
+  address:  z.string().max(400, 'Too long'),
 });
-
-const FIELDS = [
-  { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name (Min 20 characters)' },
-  { name: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-  { name: 'password', label: 'Password', type: 'password', placeholder: 'Min 8 chars with one special char and one uppercase letter' },
-  { name: 'address', label: 'Address', type: 'text', placeholder: 'Your address' },
-];
 
 const ROLE_HOME = { admin: '/admin/dashboard', user: '/stores', store_owner: '/owner/dashboard' };
 
@@ -29,6 +22,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [serverError, setServerError] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
 
   if (user) return <Navigate to={ROLE_HOME[user.role] ?? '/stores'} replace />;
 
@@ -58,28 +52,25 @@ export default function Signup() {
       overflow: 'hidden',
     }}>
       <div style={{
-        position: 'absolute',
-        width: 600,
-        height: 600,
-        borderRadius: '50%',
+        position: 'absolute', width: 600, height: 600, borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
+        top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none',
       }} />
 
-      <div style={{ width: '100%', maxWidth: 460, animation: 'fadeUp 0.4s ease forwards' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 32, color: 'var(--accent)', marginBottom: 8 }}>★</div>
+      <div style={{ width: '100%', maxWidth: 480, animation: 'fadeUp 0.4s ease forwards' }}>
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            background: 'var(--accent-dim)', border: '1px solid rgba(245,158,11,0.3)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, color: 'var(--accent)', marginBottom: 12,
+          }}>★</div>
           <h1 style={{
             fontFamily: 'Fraunces, Georgia, serif',
-            fontSize: 32,
-            fontWeight: 400,
-            margin: 0,
-            letterSpacing: '-0.5px',
+            fontSize: 30, fontWeight: 400, margin: '0 0 6px', letterSpacing: '-0.5px',
           }}>Create account</h1>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
             Join Ratify to discover and review stores
           </p>
         </div>
@@ -87,26 +78,55 @@ export default function Signup() {
         <div className="card" style={{ padding: 32 }}>
           {serverError && (
             <div style={{
-              background: 'rgba(248,113,113,0.1)',
-              border: '1px solid rgba(248,113,113,0.25)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              marginBottom: 20,
-              fontSize: 13,
-              color: 'var(--error)',
-            }}>
-              {serverError}
-            </div>
+              background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)',
+              borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: 'var(--error)',
+            }}>{serverError}</div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {FIELDS.map(f => (
-              <div key={f.name}>
-                <label className="form-label">{f.label}</label>
-                <input {...register(f.name)} type={f.type} placeholder={f.placeholder} />
-                {errors[f.name] && <p className="form-error">{errors[f.name].message}</p>}
+            <div>
+              <label className="form-label">Full Name</label>
+              <input {...register('name')} type="text" placeholder="Your full name (min 20 characters)" />
+              {errors.name && <p className="form-error">{errors.name.message}</p>}
+            </div>
+
+            <div>
+              <label className="form-label">Email</label>
+              <input {...register('email')} type="email" placeholder="you@example.com" />
+              {errors.email && <p className="form-error">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label className="form-label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  {...register('password')}
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="Min 8 chars, 1 uppercase, 1 special"
+                  style={{ paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--subtle)', fontSize: 14, padding: 0, lineHeight: 1,
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--subtle)'}
+                >{showPwd ? '○' : '●'}</button>
               </div>
-            ))}
+              {errors.password && <p className="form-error">{errors.password.message}</p>}
+            </div>
+
+            <div>
+              <label className="form-label">Address</label>
+              <input {...register('address')} type="text" placeholder="Your address" />
+              {errors.address && <p className="form-error">{errors.address.message}</p>}
+            </div>
+
             <button
               type="submit"
               disabled={isSubmitting}
@@ -120,7 +140,7 @@ export default function Signup() {
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--subtle)' }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Sign in</Link>
+          <Link to="/login" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Sign in</Link>
         </p>
       </div>
     </div>

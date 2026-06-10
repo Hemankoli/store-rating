@@ -6,6 +6,7 @@ import { z } from 'zod';
 import Layout from '../../components/Layout';
 import SortableTable from '../../components/SortableTable';
 import client from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 
 const createSchema = z.object({
   name: z.string().min(20, 'Min 20 characters').max(60, 'Max 60 characters'),
@@ -56,6 +57,7 @@ export default function AdminUsers() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [showForm, setShowForm] = useState(false);
   const [serverError, setServerError] = useState('');
+  const { toast } = useToast();
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
@@ -73,6 +75,7 @@ export default function AdminUsers() {
       setServerError('');
       await client('users', { body: data });
       reset(); setShowForm(false); fetchUsers();
+      toast.success('User created', 'The new user account is ready.');
     } catch (err) { setServerError(err.message || 'Failed to create user'); }
   }
 
