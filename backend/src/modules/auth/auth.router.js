@@ -8,7 +8,7 @@ const router = Router();
 
 router.post('/signup', validate(signupSchema), controller.signup);
 router.post('/login', validate(loginSchema), controller.login);
-router.post('/logout', auth, controller.logout);
+router.post('/logout', controller.logout);
 router.patch('/password', auth, validate(changePasswordSchema), controller.changePassword);
 
 module.exports = router;
