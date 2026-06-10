@@ -42,9 +42,9 @@ const COLUMNS = [
 ];
 
 const FORM_FIELDS = [
-  { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Min 20 characters' },
+  { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Full name (Min 20 characters)' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'user@example.com' },
-  { name: 'password', label: 'Password', type: 'password', placeholder: '8–16 chars' },
+  { name: 'password', label: 'Password', type: 'password', placeholder: 'Min 8 chars with one special char and one uppercase letter' },
   { name: 'address', label: 'Address', type: 'text', placeholder: 'Street address' },
 ];
 
@@ -60,8 +60,10 @@ export default function AdminUsers() {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
   async function fetchUsers() {
-    const res = await client('users', { params: { ...filters, role: roleFilter, sortBy, sortOrder } });
-    setUsers(res.data);
+    try {
+      const res = await client('users', { params: { ...filters, role: roleFilter, sortBy, sortOrder } });
+      setUsers(res.data);
+    } catch {}
   }
 
   useEffect(() => { fetchUsers(); }, [filters, roleFilter, sortBy, sortOrder]);

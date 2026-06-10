@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import useAuth from '../../hooks/useAuth';
 
@@ -10,10 +10,14 @@ const schema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const ROLE_HOME = { admin: '/admin/dashboard', user: '/stores', store_owner: '/owner/dashboard' };
+
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
+
+  if (user) return <Navigate to={ROLE_HOME[user.role] ?? '/stores'} replace />;
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),

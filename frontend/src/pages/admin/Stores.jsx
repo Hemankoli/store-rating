@@ -14,27 +14,10 @@ const createSchema = z.object({
   ownerId: z.string().uuid('Must be a valid UUID').optional().or(z.literal('')),
 });
 
-const COLUMNS = [
-  { key: 'name', label: 'Store Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'address', label: 'Address' },
-  {
-    key: 'avgRating',
-    label: 'Rating',
-    render: row => row.avgRating != null ? (
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ color: 'var(--accent)', fontSize: 14 }}>★</span>
-        <span style={{ fontWeight: 500 }}>{row.avgRating.toFixed(2)}</span>
-      </span>
-    ) : <span style={{ color: 'var(--subtle)' }}>—</span>,
-  },
-];
-
 const FORM_FIELDS = [
-  { name: 'name', label: 'Store Name', type: 'text', placeholder: 'Min 20 characters' },
+  { name: 'name', label: 'Store Name', type: 'text', placeholder: 'Store name (Min 20 characters)' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'store@example.com' },
   { name: 'address', label: 'Address', type: 'text', placeholder: 'Street address' },
-  { name: 'ownerId', label: 'Owner ID (optional)', type: 'text', placeholder: 'UUID of store owner' },
 ];
 
 export default function AdminStores() {
@@ -44,12 +27,36 @@ export default function AdminStores() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [showForm, setShowForm] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [owners, setOwners] = useState([]);
+  const [assigningId, setAssigningId] = useState(null);
+  const [assignOwnerId, setAssignOwnerId] = useState('');
+  const [assignError, setAssignError] = useState('');
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
   async function fetchStores() {
-    const res = await client('stores', { params: { ...filters, sortBy, sortOrder } });
-    setStores(res.data);
+    try {
+      const res = await client('stores', { params: { ...filters, sortBy, sortOrder } });
+      setStores(res.data);
+    } catch {}
+  }
+
+  async function fetchOwners() {
+    try {
+      const res = await client('users', { params: { role: 'store_owner' } });
+      setOwners(res.data);
+    } catch {}
+  }
+
+  async function assignOwner(storeId) {
+    try {
+      setAssignError('');
+      await client(`stores/${storeId}`, { method: 'PATCH', body: { ownerId: assignOwnerId || null } });
+      setAssigningId(null);
+      fetchStores();
+    } catch (err) {
+      setAssignError(err.message || 'Failed to assign owner');
+    }
   }
 
   useEffect(() => { fetchStores(); }, [filters, sortBy, sortOrder]);
@@ -63,6 +70,58 @@ export default function AdminStores() {
     } catch (err) { setServerError(err.message || 'Failed to create store'); }
   }
 
+  const COLUMNS = [
+    { key: 'name', label: 'Store Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'address', label: 'Address' },
+    {
+      key: 'ownerName',
+      label: 'Owner',
+      render: row => row.ownerName
+        ? <span style={{ fontWeight: 500 }}>{row.ownerName}</span>
+        : <span style={{ color: 'var(--subtle)' }}>—</span>,
+    },
+    {
+      key: 'avgRating',
+      label: 'Rating',
+      render: row => row.avgRating != null ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: 'var(--accent)', fontSize: 14 }}>★</span>
+          <span style={{ fontWeight: 500 }}>{row.avgRating.toFixed(2)}</span>
+        </span>
+      ) : <span style={{ color: 'var(--subtle)' }}>—</span>,
+    },
+    {
+      key: 'assignOwner',
+      label: '',
+      sortable: false,
+      render: row => assigningId === row.id ? (
+        <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            value={assignOwnerId}
+            onChange={e => setAssignOwnerId(e.target.value)}
+            style={{ fontSize: 13 }}
+          >
+            <option value="">No owner</option>
+            {owners.map(o => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+          <button className="btn-primary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => assignOwner(row.id)}>Save</button>
+          <button className="btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => { setAssigningId(null); setAssignError(''); }}>Cancel</button>
+          {assignError && <span style={{ color: 'var(--error)', fontSize: 12 }}>{assignError}</span>}
+        </span>
+      ) : (
+        <button
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 13, fontWeight: 500, padding: 0 }}
+          onClick={() => { fetchOwners(); setAssigningId(row.id); setAssignOwnerId(row.ownerId ?? ''); setAssignError(''); }}
+        >
+          Assign Owner
+        </button>
+      ),
+    },
+  ];
+
   return (
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
@@ -70,7 +129,13 @@ export default function AdminStores() {
           <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, fontWeight: 400, margin: 0, letterSpacing: '-0.5px' }}>Stores</h1>
           <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>{stores.length} registered</p>
         </div>
-        <button onClick={() => setShowForm(s => !s)} className={showForm ? 'btn-secondary' : 'btn-primary'}>
+        <button
+          onClick={() => {
+            if (!showForm) fetchOwners();
+            setShowForm(s => !s);
+          }}
+          className={showForm ? 'btn-secondary' : 'btn-primary'}
+        >
           {showForm ? 'Cancel' : '+ Add Store'}
         </button>
       </div>
@@ -91,6 +156,16 @@ export default function AdminStores() {
                 {errors[f.name] && <p className="form-error">{errors[f.name].message}</p>}
               </div>
             ))}
+            <div>
+              <label className="form-label">Owner (optional)</label>
+              <select {...register('ownerId')}>
+                <option value="">No owner</option>
+                {owners.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              {errors.ownerId && <p className="form-error">{errors.ownerId.message}</p>}
+            </div>
             <div style={{ gridColumn: '1 / -1', paddingTop: 4 }}>
               <button type="submit" disabled={isSubmitting} className="btn-primary">
                 {isSubmitting ? 'Creating…' : 'Create Store'}

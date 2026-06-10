@@ -23,12 +23,15 @@ const ROLE_BADGE = {
   store_owner: { label: 'Owner', cls: 'badge badge-green' },
 };
 
+const ROLE_HOME = { admin: '/admin/dashboard', user: '/stores', store_owner: '/owner/dashboard' };
+
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const links = NAV_LINKS[user?.role] || [];
   const badge = ROLE_BADGE[user?.role];
+  const logoTo = user ? (ROLE_HOME[user.role] ?? '/') : '/';
 
   async function handleLogout() {
     await logout();
@@ -47,7 +50,7 @@ export default function Layout({ children }) {
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', height: 58 }}>
           {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 40 }}>
+          <Link to={logoTo} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 40 }}>
             <span style={{ fontSize: 18, color: 'var(--accent)' }}>★</span>
             <span style={{
               fontFamily: 'Fraunces, Georgia, serif',

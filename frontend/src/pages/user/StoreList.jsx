@@ -12,8 +12,10 @@ export default function UserStoreList() {
   const [pendingRatings, setPendingRatings] = useState({});
 
   async function fetchStores() {
-    const res = await client('stores', { params: { ...filters, sortBy, sortOrder } });
-    setStores(res.data);
+    try {
+      const res = await client('stores', { params: { ...filters, sortBy, sortOrder } });
+      setStores(res.data);
+    } catch {}
   }
 
   useEffect(() => { fetchStores(); }, [filters, sortBy, sortOrder]);

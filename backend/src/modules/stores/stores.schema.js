@@ -7,4 +7,8 @@ const createStoreSchema = z.object({
   ownerId: z.string().uuid().optional(),
 });
 
-module.exports = { createStoreSchema };
+const updateStoreSchema = z.object({
+  ownerId: z.string().uuid().nullable(),
+});
+
+module.exports = { createStoreSchema, updateStoreSchema };

@@ -30,4 +30,13 @@ async function getStoreById(req, res, next) {
   }
 }
 
-module.exports = { listStores, createStore, getStoreById };
+async function updateStore(req, res, next) {
+  try {
+    const data = await storesService.updateStoreOwner(req.params.id, req.body.ownerId ?? null);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listStores, createStore, getStoreById, updateStore };

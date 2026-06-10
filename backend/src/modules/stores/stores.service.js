@@ -17,13 +17,15 @@ async function listStores({ name, address, sortBy = 'name', sortOrder = 'asc', u
   const orderCol = orderField === 'createdAt' ? `s."createdAt"` : `s.${orderField}`;
   const sql = `
     SELECT s.id, s.name, s.email, s.address, s."ownerId", s."createdAt",
+           p.name AS "ownerName",
            AVG(r.value) AS "avgRating",
            MAX(CASE WHEN r."userId" = $1 THEN r.value END) AS "userRating",
            MAX(CASE WHEN r."userId" = $2 THEN r.id END) AS "_ratingId"
     FROM store s
+    LEFT JOIN profile p ON p.id = s."ownerId"
     LEFT JOIN rating r ON r."storeId" = s.id
     ${where}
-    GROUP BY s.id
+    GROUP BY s.id, p.name
     ORDER BY ${orderCol} ${order}`;
 
   const { rows } = await pool.query(sql, params);
@@ -34,6 +36,7 @@ async function listStores({ name, address, sortBy = 'name', sortOrder = 'asc', u
     email: row.email,
     address: row.address,
     ownerId: row.ownerId,
+    ownerName: row.ownerName ?? null,
     createdAt: row.createdAt,
     avgRating: row.avgRating ? parseFloat(parseFloat(row.avgRating).toFixed(2)) : null,
     ...(userId !== undefined && {
@@ -89,4 +92,28 @@ async function getStoreById(id, userId) {
   };
 }
 
-module.exports = { listStores, createStore, getStoreById };
+async function updateStoreOwner(storeId, ownerId) {
+  if (ownerId !== null) {
+    const { rows } = await pool.query(
+      "SELECT id FROM profile WHERE id = $1 AND role = 'store_owner'",
+      [ownerId]
+    );
+    if (!rows.length) {
+      const err = new Error('User not found or not a store owner');
+      err.status = 400;
+      throw err;
+    }
+  }
+  const { rows } = await pool.query(
+    'UPDATE store SET "ownerId" = $1 WHERE id = $2 RETURNING id, name, email, address, "ownerId"',
+    [ownerId, storeId]
+  );
+  if (!rows.length) {
+    const err = new Error('Store not found');
+    err.status = 404;
+    throw err;
+  }
+  return rows[0];
+}
+
+module.exports = { listStores, createStore, getStoreById, updateStoreOwner };

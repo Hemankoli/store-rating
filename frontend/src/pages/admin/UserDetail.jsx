@@ -12,7 +12,13 @@ export default function AdminUserDetail() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    client(`users/${id}`).then(res => setUser(res.data));
+    async function fetchUser() {
+      try {
+        const res = await client(`users/${id}`);
+        setUser(res.data);
+      } catch {}
+    }
+    fetchUser();
   }, [id]);
 
   return (

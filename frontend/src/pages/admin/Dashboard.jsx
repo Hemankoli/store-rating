@@ -39,7 +39,13 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    client('admin/stats').then(res => setStats(res.data));
+    async function fetchStats() {
+      try {
+        const res = await client('admin/stats');
+        setStats(res.data);
+      } catch {}
+    }
+    fetchStats();
   }, []);
 
   return (

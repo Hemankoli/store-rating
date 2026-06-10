@@ -59,9 +59,13 @@ export default function OwnerDashboard() {
   const [sortOrder, setSortOrder] = useState('desc');
 
   useEffect(() => {
-    client('owner/dashboard', { params: { sortBy, sortOrder } })
-      .then(res => setData(res))
-      .catch(() => {});
+    async function fetchDashboard() {
+      try {
+        const res = await client('owner/dashboard', { params: { sortBy, sortOrder } });
+        setData(res);
+      } catch {}
+    }
+    fetchDashboard();
   }, [sortBy, sortOrder]);
 
   // tally ratings distribution

@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import client from '../../api/client';
+import useAuth from '../../hooks/useAuth';
 
 const schema = z.object({
   name: z.string().min(20, 'At least 20 characters').max(60, 'At most 60 characters'),
@@ -16,15 +17,20 @@ const schema = z.object({
 });
 
 const FIELDS = [
-  { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name (min 20 chars)' },
+  { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name (Min 20 characters)' },
   { name: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-  { name: 'password', label: 'Password', type: 'password', placeholder: '8–16 chars, uppercase + special' },
+  { name: 'password', label: 'Password', type: 'password', placeholder: 'Min 8 chars with one special char and one uppercase letter' },
   { name: 'address', label: 'Address', type: 'text', placeholder: 'Your address' },
 ];
 
+const ROLE_HOME = { admin: '/admin/dashboard', user: '/stores', store_owner: '/owner/dashboard' };
+
 export default function Signup() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [serverError, setServerError] = useState('');
+
+  if (user) return <Navigate to={ROLE_HOME[user.role] ?? '/stores'} replace />;
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
