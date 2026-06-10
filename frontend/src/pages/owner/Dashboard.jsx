@@ -62,7 +62,7 @@ export default function OwnerDashboard() {
     async function fetchDashboard() {
       try {
         const res = await client('owner/dashboard', { params: { sortBy, sortOrder } });
-        setData(res);
+        setData(res.data);
       } catch {}
     }
     fetchDashboard();
