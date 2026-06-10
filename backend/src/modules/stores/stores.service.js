@@ -1,81 +1,91 @@
-const prisma = require('../../lib/prisma');
+const { v4: uuidv4 } = require('uuid');
+const pool = require('../../lib/db');
 
 async function listStores({ name, address, sortBy = 'name', sortOrder = 'asc', userId }) {
   const allowedSortFields = ['name', 'email', 'address', 'createdAt'];
   const orderField = allowedSortFields.includes(sortBy) ? sortBy : 'name';
-  const order = sortOrder === 'desc' ? 'desc' : 'asc';
+  const order = sortOrder === 'desc' ? 'DESC' : 'ASC';
 
-  const stores = await prisma.store.findMany({
-    where: {
-      ...(name && { name: { contains: name, mode: 'insensitive' } }),
-      ...(address && { address: { contains: address, mode: 'insensitive' } }),
-    },
-    orderBy: { [orderField]: order },
-    include: {
-      ratings: { select: { id: true, value: true, userId: true } },
-    },
-  });
+  const conditions = [];
+  const params = [userId ?? null, userId ?? null];
+  let idx = 3;
 
-  return stores.map(store => {
-    const values = store.ratings.map(r => r.value);
-    const avgRating = values.length
-      ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
-      : null;
-    const userRatingObj = userId ? store.ratings.find(r => r.userId === userId) : null;
-    return {
-      id: store.id,
-      name: store.name,
-      email: store.email,
-      address: store.address,
-      ownerId: store.ownerId,
-      createdAt: store.createdAt,
-      avgRating,
-      ...(userId !== undefined && {
-        userRating: userRatingObj?.value ?? null,
-        _ratingId: userRatingObj?.id ?? null,
-      }),
-    };
-  });
+  if (name)    { conditions.push(`s.name ILIKE $${idx++}`);    params.push(`%${name}%`); }
+  if (address) { conditions.push(`s.address ILIKE $${idx++}`); params.push(`%${address}%`); }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const orderCol = orderField === 'createdAt' ? `s."createdAt"` : `s.${orderField}`;
+  const sql = `
+    SELECT s.id, s.name, s.email, s.address, s."ownerId", s."createdAt",
+           AVG(r.value) AS "avgRating",
+           MAX(CASE WHEN r."userId" = $1 THEN r.value END) AS "userRating",
+           MAX(CASE WHEN r."userId" = $2 THEN r.id END) AS "_ratingId"
+    FROM store s
+    LEFT JOIN rating r ON r."storeId" = s.id
+    ${where}
+    GROUP BY s.id
+    ORDER BY ${orderCol} ${order}`;
+
+  const { rows } = await pool.query(sql, params);
+
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    address: row.address,
+    ownerId: row.ownerId,
+    createdAt: row.createdAt,
+    avgRating: row.avgRating ? parseFloat(parseFloat(row.avgRating).toFixed(2)) : null,
+    ...(userId !== undefined && {
+      userRating: row.userRating ?? null,
+      _ratingId: row._ratingId ?? null,
+    }),
+  }));
 }
 
 async function createStore({ name, email, address, ownerId }) {
-  const existing = await prisma.store.findUnique({ where: { email } });
-  if (existing) {
+  const { rows: existing } = await pool.query('SELECT id FROM store WHERE email = $1', [email]);
+  if (existing.length) {
     const err = new Error('Store email already in use');
     err.status = 409;
     throw err;
   }
-  return prisma.store.create({
-    data: { name, email, address, ...(ownerId && { ownerId }) },
-    select: { id: true, name: true, email: true, address: true, ownerId: true, createdAt: true },
-  });
+  const id = uuidv4();
+  await pool.query(
+    'INSERT INTO store (id, name, email, address, "ownerId") VALUES ($1, $2, $3, $4, $5)',
+    [id, name, email, address, ownerId ?? null]
+  );
+  return { id, name, email, address, ownerId: ownerId ?? null };
 }
 
 async function getStoreById(id, userId) {
-  const store = await prisma.store.findUnique({
-    where: { id },
-    include: { ratings: { select: { id: true, value: true, userId: true } } },
-  });
-  if (!store) {
+  const { rows } = await pool.query(
+    `SELECT s.id, s.name, s.email, s.address, s."ownerId", s."createdAt",
+            AVG(r.value) AS "avgRating",
+            MAX(CASE WHEN r."userId" = $1 THEN r.value END) AS "userRating",
+            MAX(CASE WHEN r."userId" = $2 THEN r.id END) AS "_ratingId"
+     FROM store s
+     LEFT JOIN rating r ON r."storeId" = s.id
+     WHERE s.id = $3
+     GROUP BY s.id`,
+    [userId ?? null, userId ?? null, id]
+  );
+  if (!rows.length) {
     const err = new Error('Store not found');
     err.status = 404;
     throw err;
   }
-  const values = store.ratings.map(r => r.value);
-  const avgRating = values.length
-    ? parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
-    : null;
-  const userRatingObj = userId ? store.ratings.find(r => r.userId === userId) : null;
+  const row = rows[0];
   return {
-    id: store.id,
-    name: store.name,
-    email: store.email,
-    address: store.address,
-    ownerId: store.ownerId,
-    createdAt: store.createdAt,
-    avgRating,
-    userRating: userRatingObj?.value ?? null,
-    _ratingId: userRatingObj?.id ?? null,
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    address: row.address,
+    ownerId: row.ownerId,
+    createdAt: row.createdAt,
+    avgRating: row.avgRating ? parseFloat(parseFloat(row.avgRating).toFixed(2)) : null,
+    userRating: row.userRating ?? null,
+    _ratingId: row._ratingId ?? null,
   };
 }
 

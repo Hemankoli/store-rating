@@ -1,29 +1,32 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const prisma = require('../../lib/prisma');
+const { v4: uuidv4 } = require('uuid');
+const pool = require('../../lib/db');
 
 async function signup({ name, email, password, address }) {
-  const existing = await prisma.profile.findUnique({ where: { email } });
-  if (existing) {
+  const { rows } = await pool.query('SELECT id FROM profile WHERE email = $1', [email]);
+  if (rows.length) {
     const err = new Error('Email already in use');
     err.status = 409;
     throw err;
   }
   const hash = await bcrypt.hash(password, 10);
-  const profile = await prisma.profile.create({
-    data: { name, email, password: hash, address, role: 'user' },
-    select: { id: true, name: true, email: true, address: true, role: true },
-  });
-  return profile;
+  const id = uuidv4();
+  await pool.query(
+    'INSERT INTO profile (id, name, email, password, address, role) VALUES ($1, $2, $3, $4, $5, $6)',
+    [id, name, email, hash, address, 'user']
+  );
+  return { id, name, email, address, role: 'user' };
 }
 
 async function login({ email, password }) {
-  const profile = await prisma.profile.findUnique({ where: { email } });
-  if (!profile) {
+  const { rows } = await pool.query('SELECT * FROM profile WHERE email = $1', [email]);
+  if (!rows.length) {
     const err = new Error('Invalid credentials');
     err.status = 401;
     throw err;
   }
+  const profile = rows[0];
   const valid = await bcrypt.compare(password, profile.password);
   if (!valid) {
     const err = new Error('Invalid credentials');
@@ -42,12 +45,13 @@ async function login({ email, password }) {
 }
 
 async function changePassword({ userId, currentPassword, newPassword }) {
-  const profile = await prisma.profile.findUnique({ where: { id: userId } });
-  if (!profile) {
+  const { rows } = await pool.query('SELECT * FROM profile WHERE id = $1', [userId]);
+  if (!rows.length) {
     const err = new Error('User not found');
     err.status = 404;
     throw err;
   }
+  const profile = rows[0];
   const valid = await bcrypt.compare(currentPassword, profile.password);
   if (!valid) {
     const err = new Error('Current password is incorrect');
@@ -55,7 +59,7 @@ async function changePassword({ userId, currentPassword, newPassword }) {
     throw err;
   }
   const hash = await bcrypt.hash(newPassword, 10);
-  await prisma.profile.update({ where: { id: userId }, data: { password: hash } });
+  await pool.query('UPDATE profile SET password = $1 WHERE id = $2', [hash, userId]);
 }
 
 module.exports = { signup, login, changePassword };

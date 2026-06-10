@@ -1,37 +1,46 @@
-const prisma = require('../../lib/prisma');
+const { v4: uuidv4 } = require('uuid');
+const pool = require('../../lib/db');
 
 async function submitRating({ userId, storeId, value }) {
-  const existing = await prisma.rating.findUnique({
-    where: { storeId_userId: { storeId, userId } },
-  });
-  if (existing) {
+  const { rows: existing } = await pool.query(
+    'SELECT id FROM rating WHERE "storeId" = $1 AND "userId" = $2',
+    [storeId, userId]
+  );
+  if (existing.length) {
     const err = new Error('You have already rated this store');
     err.status = 409;
     throw err;
   }
-  return prisma.rating.create({
-    data: { userId, storeId, value },
-    select: { id: true, value: true, storeId: true, userId: true, createdAt: true },
-  });
+  const id = uuidv4();
+  await pool.query(
+    'INSERT INTO rating (id, value, "storeId", "userId") VALUES ($1, $2, $3, $4)',
+    [id, value, storeId, userId]
+  );
+  const { rows } = await pool.query(
+    'SELECT id, value, "storeId", "userId", "createdAt" FROM rating WHERE id = $1',
+    [id]
+  );
+  return rows[0];
 }
 
 async function updateRating({ ratingId, userId, value }) {
-  const rating = await prisma.rating.findUnique({ where: { id: ratingId } });
-  if (!rating) {
+  const { rows } = await pool.query('SELECT * FROM rating WHERE id = $1', [ratingId]);
+  if (!rows.length) {
     const err = new Error('Rating not found');
     err.status = 404;
     throw err;
   }
-  if (rating.userId !== userId) {
+  if (rows[0].userId !== userId) {
     const err = new Error('Forbidden');
     err.status = 403;
     throw err;
   }
-  return prisma.rating.update({
-    where: { id: ratingId },
-    data: { value },
-    select: { id: true, value: true, storeId: true, userId: true, createdAt: true },
-  });
+  await pool.query('UPDATE rating SET value = $1 WHERE id = $2', [value, ratingId]);
+  const { rows: updated } = await pool.query(
+    'SELECT id, value, "storeId", "userId", "createdAt" FROM rating WHERE id = $1',
+    [ratingId]
+  );
+  return updated[0];
 }
 
 module.exports = { submitRating, updateRating };

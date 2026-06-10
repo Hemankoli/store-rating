@@ -1,12 +1,16 @@
-const prisma = require('../../lib/prisma');
+const pool = require('../../lib/db');
 
 async function getStats() {
-  const [totalUsers, totalStores, totalRatings] = await Promise.all([
-    prisma.profile.count(),
-    prisma.store.count(),
-    prisma.rating.count(),
+  const [r1, r2, r3] = await Promise.all([
+    pool.query('SELECT COUNT(*) AS total FROM profile'),
+    pool.query('SELECT COUNT(*) AS total FROM store'),
+    pool.query('SELECT COUNT(*) AS total FROM rating'),
   ]);
-  return { totalUsers, totalStores, totalRatings };
+  return {
+    totalUsers: Number(r1.rows[0].total),
+    totalStores: Number(r2.rows[0].total),
+    totalRatings: Number(r3.rows[0].total),
+  };
 }
 
 module.exports = { getStats };
