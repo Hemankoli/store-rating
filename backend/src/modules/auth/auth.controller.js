@@ -1,9 +1,11 @@
 const authService = require('./auth.service');
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'strict',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: isProd ? 'none' : 'strict',
+  secure: isProd,
   maxAge: 24 * 60 * 60 * 1000,
 };
 
@@ -27,7 +29,11 @@ async function login(req, res, next) {
 }
 
 async function logout(req, res) {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: isProd ? 'none' : 'strict',
+    secure: isProd,
+  });
   res.json({ success: true, message: 'Logged out' });
 }
 
