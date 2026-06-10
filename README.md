@@ -6,12 +6,12 @@ A full-stack web application where users submit 1–5 star ratings for registere
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + Vite + Tailwind CSS |
+| Frontend | React 19 + Vite + Tailwind CSS |
 | Forms | react-hook-form + zod |
-| HTTP client | Axios (httpOnly cookie auth) |
-| Backend | Express.js (modular monolith) |
+| HTTP client | Fetch API (custom client, httpOnly cookie auth) |
+| Backend | Express.js 5 (modular monolith) |
 | Auth | JWT + bcryptjs + httpOnly cookies |
-| ORM | Prisma |
+| Database driver | `pg` (node-postgres) |
 | Database | PostgreSQL |
 
 ## Project Structure
@@ -20,41 +20,48 @@ A full-stack web application where users submit 1–5 star ratings for registere
 store-ratings/
 ├── frontend/     # React + Vite + Tailwind
 └── backend/      # Express modular monolith
-    ├── prisma/
     └── src/
+        ├── lib/       # db pool (pg), initDb, seed
         ├── modules/   # auth, users, stores, ratings, admin, owner
-        ├── middleware/ # auth, requireRole, validate
-        └── tests/
+        └── middleware/ # auth, requireRole, validate
 ```
 
 ## Setup
 
 ### 1. Backend
 
+Create `backend/.env`:
+
+```env
+PORT=5000
+DATABASE_URL=postgresql://user:password@localhost:5432/store_ratings
+JWT_SECRET=your_jwt_secret
+CLIENT_URL=http://localhost:5173
+```
+
 ```bash
 cd backend
-
-# Copy and fill in environment variables
-cp .env.example .env
-# Edit .env: set DATABASE_URL and JWT_SECRET
 
 # Install dependencies
 npm install
 
-# Run database migration
-npm run db:migrate
+# Create tables in PostgreSQL
+npm run db:init
 
-# Generate Prisma client
-npm run db:generate
-
-# Seed the admin user (admin@example.com / Admin123!)
+# Seed sample data (optional)
 npm run db:seed
 
-# Start dev server (http://localhost:4000)
+# Start dev server (http://localhost:5000)
 npm run dev
 ```
 
 ### 2. Frontend
+
+Create `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
 
 ```bash
 cd frontend
@@ -95,16 +102,10 @@ npm run dev
 | GET | `/api/stores` | admin, user | List stores |
 | POST | `/api/stores` | admin | Create store |
 | GET | `/api/stores/:id` | admin, user | Store detail |
+| PATCH | `/api/stores/:id` | admin | Assign / change store owner |
 | POST | `/api/ratings` | user | Submit rating |
 | PATCH | `/api/ratings/:id` | user | Update rating |
 | GET | `/api/owner/dashboard` | store_owner | Owner dashboard |
-
-## Running Tests
-
-```bash
-cd backend
-npm test
-```
 
 ## Form Validation Rules
 
