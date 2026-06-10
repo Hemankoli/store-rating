@@ -9,7 +9,8 @@
     "test": "jest --runInBand --forceExit",
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "db:seed": "node src/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +18,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^7.8.0",
+    "@prisma/extension-accelerate": "^3.0.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -27,8 +29,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "jest": "^30.4.2",
-    "nodemon": "^3.1.14",
-    "supertest": "^7.2.2"
+    "nodemon": "^3.1.14"
   }
 }
