@@ -7,6 +7,7 @@ import Layout from '../../components/Layout';
 import SortableTable from '../../components/SortableTable';
 import client from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const createSchema = z.object({
   name: z.string().min(20, 'Min 20 characters').max(60, 'Max 60 characters'),
@@ -58,6 +59,7 @@ export default function AdminUsers() {
   const [showForm, setShowForm] = useState(false);
   const [serverError, setServerError] = useState('');
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
@@ -81,7 +83,7 @@ export default function AdminUsers() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, fontWeight: 400, margin: 0, letterSpacing: '-0.5px' }}>Users</h1>
           <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>{users.length} total</p>
@@ -99,7 +101,7 @@ export default function AdminUsers() {
               {serverError}
             </div>
           )}
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
             {FORM_FIELDS.map(f => (
               <div key={f.name}>
                 <label className="form-label">{f.label}</label>

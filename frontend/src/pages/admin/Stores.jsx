@@ -7,6 +7,7 @@ import SortableTable from '../../components/SortableTable';
 import RatingStars from '../../components/RatingStars';
 import client from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const createSchema = z.object({
   name: z.string().min(20, 'Min 20 characters').max(60, 'Max 60 characters'),
@@ -33,6 +34,7 @@ export default function AdminStores() {
   const [assignOwnerId, setAssignOwnerId] = useState('');
   const [assignError, setAssignError] = useState('');
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(createSchema) });
 
@@ -128,7 +130,7 @@ export default function AdminStores() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, fontWeight: 400, margin: 0, letterSpacing: '-0.5px' }}>Stores</h1>
           <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>{stores.length} registered</p>
@@ -152,7 +154,7 @@ export default function AdminStores() {
               {serverError}
             </div>
           )}
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
             {FORM_FIELDS.map(f => (
               <div key={f.name}>
                 <label className="form-label">{f.label}</label>

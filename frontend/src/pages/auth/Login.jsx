@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import useAuth from '../../hooks/useAuth';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -21,6 +22,7 @@ const FEATURES = [
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [serverError, setServerError] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
@@ -45,13 +47,14 @@ export default function Login() {
       minHeight: '100vh',
       backgroundColor: 'var(--bg)',
       display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Left panel — branding */}
+      {/* Left panel — branding (hidden on mobile) */}
       <div style={{
         flex: '0 0 42%',
-        display: 'flex',
+        display: isMobile ? 'none' : 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         padding: '60px 56px',
@@ -114,13 +117,24 @@ export default function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px 32px',
+        padding: isMobile ? '40px 20px' : '40px 32px',
       }}>
         <div style={{ width: '100%', maxWidth: 400, animation: 'fadeUp 0.45s 0.1s ease both' }}>
-          <div style={{ marginBottom: 32 }}>
+          {isMobile && (
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'var(--accent-dim)', border: '1px solid rgba(245,158,11,0.3)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 20, color: 'var(--accent)', marginBottom: 8,
+              }}>★</div>
+              <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 24, fontWeight: 400, letterSpacing: '-0.5px' }}>Ratify</div>
+            </div>
+          )}
+          <div style={{ marginBottom: 28 }}>
             <h2 style={{
               fontFamily: 'Fraunces, Georgia, serif',
-              fontSize: 28, fontWeight: 400, margin: '0 0 6px', letterSpacing: '-0.5px',
+              fontSize: isMobile ? 22 : 28, fontWeight: 400, margin: '0 0 6px', letterSpacing: '-0.5px',
             }}>Welcome back</h2>
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>Sign in to your account</p>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
+import useIsMobile from '../../hooks/useIsMobile';
 import SortableTable from '../../components/SortableTable';
 import client from '../../api/client';
 
@@ -57,6 +58,7 @@ export default function OwnerDashboard() {
   const [data, setData] = useState(null);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -90,7 +92,7 @@ export default function OwnerDashboard() {
         <p style={{ color: 'var(--muted)', marginTop: 6, fontSize: 14 }}>Store owner dashboard</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginBottom: 28, animation: 'fadeUp 0.35s ease' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginBottom: 28, animation: 'fadeUp 0.35s ease' }}>
         {/* Big rating card */}
         <div className="card" style={{ padding: 28, position: 'relative', overflow: 'hidden' }}>
           <div style={{
